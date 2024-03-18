@@ -71,7 +71,7 @@ int main(int argc, char** argv)
             }
         }
 
-        printf("len=%d, buffer=%s\n", msg.msg_iov.iov_len, buffer);
+        printf("len=%lu, buffer=%s\n", msg.msg_iov->iov_len, buffer);
     }
     return 0;
 }
