@@ -120,6 +120,7 @@ void componentTerminateCallback(SaInvocationT invocation,
 {
     trace();
     saAmfResponse_4(amfHandler, invocation, 0, SA_AIS_OK);
+    exit(0);
 }
 
 
