@@ -31,7 +31,7 @@ immcfg -c SaAmfCompType \
     -a saAmfCtRelPathCleanupCmd=control.sh \
     -a saAmfCtDefCleanupCmdArgv=stop \
     -a saAmfCtDefQuiescingCompleteTimeout=10000000000 \
-    -a saAmfCtDefRecoveryOnError=1 \
+    -a saAmfCtDefRecoveryOnError=2 \
     -a saAmfCtDefDisableRestart=0 \
     safVersion=1,safCompType=demo
 
