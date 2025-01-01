@@ -16,7 +16,7 @@ immcfg -c SaAmfCompBaseType safCompType=demo
 
 immcfg -c SaAmfCSBaseType safCSType=demo
 
- 
+
 immcfg -c SaAmfCSType safVersion=1,safCSType=demo
 
 immcfg -c SaAmfSvcType safVersion=1,safSvcType=demo
@@ -31,7 +31,7 @@ immcfg -c SaAmfCompType \
     -a saAmfCtRelPathCleanupCmd=control.sh \
     -a saAmfCtDefCleanupCmdArgv=stop \
     -a saAmfCtDefQuiescingCompleteTimeout=10000000000 \
-    -a saAmfCtDefRecoveryOnError=2 \
+    -a saAmfCtDefRecoveryOnError=1 \
     -a saAmfCtDefDisableRestart=0 \
     safVersion=1,safCompType=demo
 
@@ -54,8 +54,8 @@ immcfg -c SaAmfSGType \
 immcfg -c SaAmfAppType \
     -a saAmfApptSGTypes=safVersion=1,safSgType=demo \
     safVersion=1,safAppType=demo
-  
- 
+
+
 immcfg -c SaAmfSutCompType \
     'safMemberCompType=safVersion=1\,safCompType=demo,safVersion=1,safSuType=demo'
 
@@ -66,7 +66,7 @@ immcfg -c SaAmfCtCsType \
 
 immcfg -c SaAmfSvcTypeCSTypes \
     'safMemberCSType=safVersion=1\,safCSType=demo,safVersion=1,safSvcType=demo'
-  
+
 
 immcfg -c SaAmfApplication \
     -a saAmfAppType=safVersion=1,safAppType=demo \
@@ -89,7 +89,7 @@ immcfg -c SaAmfSI \
 immcfg -c SaAmfCSI \
     -a saAmfCSType=safVersion=1,safCSType=demo \
     safCsi=demo,safSi=demo,safApp=demo
-  
+
 
 immcfg -c SaAmfSU \
     -a saAmfSUType=safVersion=1,safSuType=demo \
@@ -103,4 +103,8 @@ immcfg -c SaAmfComp \
 
 immcfg -c SaAmfCompCsType \
     'safSupportedCsType=safVersion=1\,safCSType=demo,safComp=demo,safSu=SC-1,safSg=demo,safApp=demo'
-  
+
+immcfg -c SaAmfHealthcheckType \
+    -a saAmfHctDefPeriod=10000000000 \
+    -a saAmfHctDefMaxDuration=5000000000 \
+    safHealthcheckKey=demo,safVersion=1,safCompType=demo

@@ -28,10 +28,14 @@ void componentTerminateCallback(SaInvocationT invocation,
 void csiAttributeChangeCallback(SaInvocationT invocation,
     const SaNameT *csiName, SaAmfCSIAttributeListT csiAttr);
 
+void healthcheckCallback(SaInvocationT invocation,
+    const SaNameT *compName, SaAmfHealthcheckKeyT *key);
+
 void* threadFunction(void* arg);
 
 
 SaAmfHandleT amfHandler;
+int healthcheckCount = 0;
 
 
 int main(int argc, char ** argv)
@@ -54,6 +58,7 @@ int main(int argc, char ** argv)
     callbacks.saAmfCSIRemoveCallback = csiRemoveCallback;
     callbacks.saAmfComponentTerminateCallback= componentTerminateCallback;
     callbacks.osafCsiAttributeChangeCallback = csiAttributeChangeCallback;
+    callbacks.saAmfHealthcheckCallback = healthcheckCallback;
     SaVersionT apiVersion = {
         .releaseCode = 'B',
         .majorVersion = 0x04,
@@ -65,6 +70,13 @@ int main(int argc, char ** argv)
     SaNameT name;
     saAmfComponentNameGet(amfHandler, &name);
     saAmfComponentRegister(amfHandler, &name, 0);
+
+    SaAmfHealthcheckKeyT healthcheckKey = {"demo", 7};
+
+    // start healthcheck
+    saAmfHealthcheckStart(
+	    amfHandler, &name, &healthcheckKey,
+	    SA_AMF_HEALTHCHECK_AMF_INVOKED, SA_AMF_COMPONENT_RESTART);
 
     // start worker thread
     pthread_t thread;
@@ -122,6 +134,16 @@ void csiAttributeChangeCallback(SaInvocationT invocation,
     const SaNameT *csiName, SaAmfCSIAttributeListT csiAttr)
 {
     trace();
+    saAmfResponse_4(amfHandler, invocation, 0, SA_AIS_OK);
+}
+
+
+void healthcheckCallback(SaInvocationT invocation,
+    const SaNameT *compName, SaAmfHealthcheckKeyT *key)
+{
+    trace("count = %d", healthcheckCount);
+    healthcheckCount += 1;
+
     saAmfResponse_4(amfHandler, invocation, 0, SA_AIS_OK);
 }
 
