@@ -61,3 +61,41 @@ strace: Process 7314 attached
 - 11:26:02, thread 7313 sleeps await on 0x2b9752a0.
 - 11:26:12, thread 7314 send wake-up notification to 0x2b9752a0.
 - 11:26:12, thread 7313 wakes up and resumes.
+
+
+# C pthread Mutex
+## pthread Mutex Deadlock
+Reproduce deadlock.
+```sh
+$ while true; do ./mutex_deadlock; done
+done
+done
+done
+# hang when deadlock occurs
+```
+
+Detect deadlock.
+```sh
+$ strace -e futex -f -p `pidof mutex_deadlock`
+strace: Process 5263 attached with 3 threads
+[pid  5263] futex(0xffffa256f270, FUTEX_WAIT_BITSET|FUTEX_CLOCK_REALTIME, 5264, NULL, FUTEX_BITSET_MATCH_ANY <unfinished ...>
+[pid  5264] futex(0x420088, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+[pid  5265] futex(0x420058, FUTEX_WAIT_PRIVATE, 2, NULL
+```
+- Thread 5264 waits for mutex 0x420088.
+- Thread 5265 waits for mutex 0x420058.
+
+```sh
+$ gdb -batch -p `pidof mutex_deadlock` -ex 'p *(pthread_mutex_t*)0x420088'
+$1 = {__data = {__lock = 2, __count = 0, __owner = 5265, __nusers = 1, __kind = 0, __spins = 0, __list = {__prev = 0x0, __next = 0x0}}, __size = "\002\000\000\000\000\000\000\000\221\024\000\000\001", '\000' <repeats 34 times>, __align = 2}
+
+$ gdb -batch -p `pidof mutex_deadlock` -ex 'p *(pthread_mutex_t*)0x420058'
+$1 = {__data = {__lock = 2, __count = 0, __owner = 5264, __nusers = 1, __kind = 0, __spins = 0, __list = {__prev = 0x0, __next = 0x0}}, __size = "\002\000\000\000\000\000\000\000\220\024\000\000\001", '\000' <repeats 34 times>, __align = 2}
+```
+- Mutex 0x420088 is owned by thread 5265.
+- Mutex 0x420058 is owned by thread 5264.
+
+So,
+- Thread 5264 waits for mutex 0x420088 which is owned by 5265.
+- Thread 5265 waits for mutex 0x420058 which is owned by 5264.
+- The two threads waits for mutexes owned by each others.
