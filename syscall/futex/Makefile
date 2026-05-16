@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -g
 LDFLAGS = -pthread
 
-TARGETS = futex_wait futex_wake mutex_deadlock
+TARGETS = futex_wait futex_wake deadlock_abba deadlock_self_relock
 
 all: $(TARGETS)
 

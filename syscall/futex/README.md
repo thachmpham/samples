@@ -64,10 +64,14 @@ strace: Process 7314 attached
 
 
 # C pthread Mutex
-## pthread Mutex Deadlock
+## ABBA Deadlock
+Thread A waits for the mutex which is locked by thread B.
+Thread B waits for the mutex which is locked by thread A.
+Both threads sleep await for each other. Both hang.
+
 Reproduce deadlock.
 ```sh
-$ while true; do ./mutex_deadlock; done
+$ while true; do ./deadlock_abba; done
 done
 done
 done
@@ -76,7 +80,7 @@ done
 
 Detect deadlock.
 ```sh
-$ strace -e futex -f -p `pidof mutex_deadlock`
+$ strace -e futex -f -p `pidof deadlock_abba`
 strace: Process 5263 attached with 3 threads
 [pid  5263] futex(0xffffa256f270, FUTEX_WAIT_BITSET|FUTEX_CLOCK_REALTIME, 5264, NULL, FUTEX_BITSET_MATCH_ANY <unfinished ...>
 [pid  5264] futex(0x420088, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
@@ -86,10 +90,10 @@ strace: Process 5263 attached with 3 threads
 - Thread 5265 waits for mutex 0x420058.
 
 ```sh
-$ gdb -batch -p `pidof mutex_deadlock` -ex 'p *(pthread_mutex_t*)0x420088'
+$ gdb -batch -p `pidof deadlock_abba` -ex 'p *(pthread_mutex_t*)0x420088'
 $1 = {__data = {__lock = 2, __count = 0, __owner = 5265, __nusers = 1, __kind = 0, __spins = 0, __list = {__prev = 0x0, __next = 0x0}}, __size = "\002\000\000\000\000\000\000\000\221\024\000\000\001", '\000' <repeats 34 times>, __align = 2}
 
-$ gdb -batch -p `pidof mutex_deadlock` -ex 'p *(pthread_mutex_t*)0x420058'
+$ gdb -batch -p `pidof deadlock_abba` -ex 'p *(pthread_mutex_t*)0x420058'
 $1 = {__data = {__lock = 2, __count = 0, __owner = 5264, __nusers = 1, __kind = 0, __spins = 0, __list = {__prev = 0x0, __next = 0x0}}, __size = "\002\000\000\000\000\000\000\000\220\024\000\000\001", '\000' <repeats 34 times>, __align = 2}
 ```
 - Mutex 0x420088 is owned by thread 5265.
@@ -103,9 +107,48 @@ So,
 Workaround to solve deadlock.
 - Thread 5264 owned mutex 0x420058. So, unlock the mutex from this thread.
 ```sh
-$ gdb -batch -p `pidof mutex_deadlock` -ex 'thread find 5264'
+$ gdb -batch -p `pidof deadlock_abba` -ex 'thread find 5264'
 Thread 2 has target id 'Thread _ (LWP 5264)'
 
-$ gdb -batch -p `pidof mutex_deadlock` -ex 'thread apply 2 call (int) pthread_mutex_unlock((pthread_mutex_t*)0x420088)'
+$ gdb -batch -p `pidof deadlock_abba` -ex 'thread apply 2 call (int) pthread_mutex_unlock((pthread_mutex_t*)0x420088)'
 ```
 - After the mutex unlocked, deadlock solved, program can continue.
+
+
+## Self Deadlock - Relock
+Reproduce
+```sh
+$ ./deadlock_self_relock
+# process hangs
+```
+
+Detect self deadlock.
+```sh
+$ strace -e futex -f -p `pidof deadlock_self_relock`
+strace: Process 9526 attached
+futex(0xffffe8f67ea0, FUTEX_WAIT_PRIVATE, 2, NULL
+```
+- Thread 9526 waits for mutex 0xffffe8f67ea0.
+
+```sh
+$ gdb -batch -p `pidof deadlock_self_relock` -ex 'p *(pthread_mutex_t*)0xffffe8f67ea0'
+$1 = {__data = {__lock = 2, __count = 0, __owner = 9526, __nusers = 1, __kind = 0, __spins = 0, __list = {__prev = 0x0, __next = 0x0}}, __size = "\002\000\000\000\000\000\000\0006%\000\000\001", '\000' <repeats 34 times>, __align = 2}
+```
+- Mutex 0xffffe8f67ea0 is owned by thread 9526.
+
+So, thead 9526 waits for the mutex which is owned by the thread itself.
+
+Workaround.
+```sh
+$ gdb -batch -p `pidof deadlock_self_relock` -ex 'thread find 9526'
+Thread 1 has target id 'Thread 0xffffa08c9e40 (LWP 9526)'
+
+$ gdb -batch -p `pidof deadlock_self_relock` -ex 'thread apply 1 call (int) pthread_mutex_unlock((pthread_mutex_t*)0xffffe8f67ea0)'
+[Inferior 1 (process 9526) detached]
+```
+
+After unlock, the thread wakes up, the program continues.
+
+Solution: PTHREAD_MUTEX_RECURSIVE.
+
+
