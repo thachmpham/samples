@@ -98,4 +98,14 @@ $1 = {__data = {__lock = 2, __count = 0, __owner = 5264, __nusers = 1, __kind = 
 So,
 - Thread 5264 waits for mutex 0x420088 which is owned by 5265.
 - Thread 5265 waits for mutex 0x420058 which is owned by 5264.
-- The two threads waits for mutexes owned by each others.
+- The two threads waits for mutexes owned by each other.
+
+Workaround to solve deadlock.
+- Thread 5264 owned mutex 0x420058. So, unlock the mutex from this thread.
+```sh
+$ gdb -batch -p `pidof mutex_deadlock` -ex 'thread find 5264'
+Thread 2 has target id 'Thread _ (LWP 5264)'
+
+$ gdb -batch -p `pidof mutex_deadlock` -ex 'thread apply 2 call (int) pthread_mutex_unlock((pthread_mutex_t*)0x420088)'
+```
+- After the mutex unlocked, deadlock solved, program can continue.
